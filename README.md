@@ -1,3 +1,23 @@
+[contributors-shield]: https://img.shields.io/github/contributors/Alessandro-Salerno/Hackasm.svg?style=flat-square
+[contributors-url]: https://github.com/Alessandro-Salerno/Hackasm/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/Alessandro-Salerno/Hackasm.svg?style=flat-square
+[forks-url]: https://github.com/Alessandro-Salerno/Hackasm/network/members
+[stars-shield]: https://img.shields.io/github/stars/Alessandro-Salerno/Hackasm.svg?style=flat-square
+[stars-url]: https://github.com/Alessandro-Salerno/Hackasm/stargazers
+[issues-shield]: https://img.shields.io/github/issues/Alessandro-Salerno/Hackasm.svg?style=flat-square
+[issues-url]: https://github.com/Alessandro-Salerno/Hackasm/issues
+[license-shield]: https://img.shields.io/github/license/Alessandro-Salerno/Hackasm.svg?style=flat-square
+[license-url]: https://github.com/Alessandro-Salerno/Hackasm/blob/master/LICENSE.txt
+
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+![](https://tokei.rs/b1/github/Alessandro-Salerno/Hackasm)
+![shield](https://img.shields.io/static/v1?label=version&message=DEV&color=blue) 
+
+
 # Hackasm
 Hackasm is an assembler made in a few days to complete the Sorint.lab HackersGen Hacking Challenge, and supports all instructions part of the VM-O-MATIC Specification while adding several handy macros to write cleaner and more powerful code
 
