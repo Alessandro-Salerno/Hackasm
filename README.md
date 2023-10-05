@@ -21,6 +21,21 @@
 # Hackasm
 Hackasm is an assembler made in a few days to complete the Sorint.lab HackersGen Hacking Challenge, and supports all instructions part of the VM-O-MATIC Specification while adding several handy macros to write cleaner and more powerful code
 
+## Installing Hackasm
+* Windows:
+```
+pip install git+https://github.com/Alessandro-Salerno/Hackasm
+```
+* macOS/Linux:
+```
+pip3 install git+https://github.com/Alessandro-Salerno/Hackasm
+```
+
+## Usage
+```
+<your python> -m hackasm <input file>
+```
+
 ## Writing Hackasm Assembly
 Hackasm Assembly is quite straight-forward and fairly intuitive, but it sports a cuple of quarks which may set you off at first.
 Following these rules and examples may help you write standard-fitting code:
