@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "Hackasm"
+version = "0.1.0
+authors = [
+  { name="Alessandro Salerno" },
+]
+description = " A work-in-progress small and simple build system meant for smaller C Projects."
+license = { file="LICENSE" }
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GPL-3.0-or-later",
+    "Operating System :: OS Independent",
