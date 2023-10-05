@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "Hackasm"
+name = "hackasm"
 version = "0.1.0"
 authors = [
   { name="Alessandro Salerno" },
