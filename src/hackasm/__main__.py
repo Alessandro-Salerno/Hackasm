@@ -1,21 +1,3 @@
-# Hackasm
-# Copyright (C) 2023 Alessandro Salerno
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-
-
 import sys
 import math
 
@@ -217,14 +199,16 @@ class Compiler(AsmComponent):
                     case 'DATA':
                         self.section = "DATA"
                         if self.code_written:
-                            self.process_instruction(index, "RET", [])
-                            return
-                        cld = VmInstructionNode(VM_INSTRUCTIONS["CMPX"], "0", self.byte_offset, index)
-                        self.result.append(cld)
-                        self.byte_offset += 2
-                        inst = VmInstructionNode(VM_INSTRUCTIONS["JE"], "_main", self.byte_offset, index)
-                        self.result.append(inst)
-                        self.byte_offset += inst.instruction.argsize + 1
+                            self.result.append(VmInstructionNode(VM_INSTRUCTIONS["RET"], "", self.byte_offset, index))
+                            self.byte_offset += 1
+                        else:
+                            cld = VmInstructionNode(VM_INSTRUCTIONS["CMPX"], "0", self.byte_offset, index)
+                            self.result.append(cld)
+                            self.byte_offset += 2
+                            inst = VmInstructionNode(VM_INSTRUCTIONS["JE"], "_main", self.byte_offset, index)
+                            self.result.append(inst)
+                            self.byte_offset += inst.instruction.argsize + 1
+
                     case 'TEXT':
                         self.section = "TEXT"
 
@@ -240,42 +224,83 @@ class Compiler(AsmComponent):
                     segments[0] = self.get_symbol(segments[0])
                 if not segments[0].isdecimal():
                     self.throw_error(index, 1, "Expected buffer size or macro symbol")
-
                 segments[0] = int(segments[0])
                 val = VmValueInfo("00" * segments[0])
                 self.result.append(VmInstructionNode(val, val.value, self.byte_offset, index))
                 self.byte_offset += segments[0]
 
+            case 'PUSHSTR':
+                if len(segments) != 1:
+                    self.throw_error(index, None, "Expected address or label")
+
+                if segments[0] in self.labels:
+                    segments[0] = self.get_label(segments[0])
+                
+                changed, int_val, str_val = to_linked_repr(segments[0])
+                if not changed and not isinstance(segments[0], int):
+                    self.throw_error(index, 1, "Invalid syntax")
+
+                address = int_val
+                if address not in self.strings:
+                    self.throw_error(index, 1, f"No string at location {hex(address).upper()}")
+                string = self.strings[address]
+                
+                base_ldx = VmInstructionNode(VM_INSTRUCTIONS["LDX"], "0", self.byte_offset, index)
+                self.byte_offset += base_ldx.instruction.argsize + 1
+                base_pushx = VmInstructionNode(VM_INSTRUCTIONS["PUSHX"], "", self.byte_offset, index)
+                self.byte_offset += 1
+                self.result.append(base_ldx)
+                self.result.append(base_pushx)
+
+                for byte in (string[i:i+2] for i in range(0, len(string), 2)):
+                    ldx = VmInstructionNode(VM_INSTRUCTIONS["LDX"], str(int(byte, 16)), self.byte_offset, index)
+                    self.byte_offset += ldx.instruction.argsize + 1
+                    pushx = VmInstructionNode(VM_INSTRUCTIONS["PUSHX"], "", self.byte_offset, index)
+                    self.byte_offset += 1
+                    self.result.append(ldx)
+                    self.result.append(pushx)
+
             case 'STRREGS':
                 if len(segments) != 1:
                     self.throw_error(index, None, "Expected address or label")
-                self.process_instruction(index, "STRX", [segments[0]])
-                self.process_instruction(index, "STRY", [f"{segments[0]}+1"])
-                
+                self.result.append(VmInstructionNode(VM_INSTRUCTIONS["STRX"], segments[0], self.byte_offset, index))
+                self.byte_offset += 3
+                self.result.append(VmInstructionNode(VM_INSTRUCTIONS["STRY"], f"{segments[0]}+1", self.byte_offset, index))
+                self.byte_offset += 3
+
             case 'LDREGS':
                 if len(segments) != 1:
                     self.throw_error(index, None, "Expected address or label")
-                self.process_instruction(index, "LDRX", [segments[0]])
-                self.process_instruction(index, "LDRY", [f"{segments[0]}+1"])
-                
+                self.result.append(VmInstructionNode(VM_INSTRUCTIONS["LDRX"], segments[0], self.byte_offset, index))
+                self.byte_offset += 3
+                self.result.append(VmInstructionNode(VM_INSTRUCTIONS["LDRY"], f"{segments[0]}+1", self.byte_offset, index))
+                self.byte_offset += 3
+
             case 'LD16':
                 if len(segments) != 1:
                     self.throw_error(index, None, "Expected value or symbol")
                 if '+' in segments[0]:
                     self.throw_error(index, 1, "LD16 macro does not support address offsets")
-                self.process_instruction(index, "LDX", [f"{segments[0]}|1"])
-                self.process_instruction(index, "LDY", [f"{segments[0]}|0"])
-                
+                self.result.append(VmInstructionNode(VM_INSTRUCTIONS["LDX"], f"{segments[0]}|1", self.byte_offset, index))
+                self.byte_offset += 2
+                self.result.append(VmInstructionNode(VM_INSTRUCTIONS["LDY"], f"{segments[0]}|0", self.byte_offset, index))
+                self.byte_offset += 2
+
             case 'PUSHREGS':
                 if len(segments) != 0:
                     self.throw_error(index, None, "No argument expected")
-                self.process_instruction(index, "PUSHY", [])
-                self.process_instruction(index, "PUSHX", [])
-                
+                self.result.append(VmInstructionNode(VM_INSTRUCTIONS["PUSHY"], "", self.byte_offset, index))
+                self.byte_offset += 1 
+                self.result.append(VmInstructionNode(VM_INSTRUCTIONS["PUSHX"], "", self.byte_offset, index))
+                self.byte_offset += 1
+
             case 'ADD16':
                 if len(segments) != 1:
                     self.throw_error(index, None, "Expected operand")
                 self.process_macro(index, "STRREGS", ["_swap"])
+                # self.process_instruction(index, "LDX", ["0"])
+                # self.process_instruction(index, "LDY", ["0"])
+                self.process_instruction(index, "POPX", [])
                 self.process_instruction(index, "CMPX", ["0"])
                 self.process_instruction(index, "ADDX", [segments[0]])
                 self.process_instruction(index, "JRE", ["29"])
@@ -341,9 +366,9 @@ class Compiler(AsmComponent):
     def process_instruction(self, index: int, opcode: str, segments: list[str]):
         if self.section != "TEXT":
             self.throw_error(index, None, "Unexpected code outside of TEXT section")
+        line: str = self.lines[index]
         if opcode.upper() not in VM_INSTRUCTIONS:
             self.throw_error(index, 0, "Unrecognized Instruction")
-
         instruction_info: VmInstructionInfo = VM_INSTRUCTIONS[opcode.upper()]
         if instruction_info.hasarg and len(segments) == 0:
             self.throw_error(index, None, "Expected instruction operand")
@@ -351,7 +376,6 @@ class Compiler(AsmComponent):
             self.throw_error(index, None, "Unexpected instruction operand(s)")
         if len(segments) > 1:
             self.throw_error(index, 2, "VM Architecture only supports single-operand instructions")
-
         inst_node = VmInstructionNode(instruction_info, segments[0] if len(segments) != 0 else "", self.byte_offset, index)
         self.result.append(inst_node)
         self.byte_offset += 1 + instruction_info.argsize
@@ -467,4 +491,3 @@ if __name__ == "__main__":
         exit(-1)
 
     exit(main(sys.argv[1]))
-
