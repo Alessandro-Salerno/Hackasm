@@ -16,3 +16,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GPL-3.0-or-later",
     "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Alessandro-Salerno/Hackasm"
+"Bug Tracker" = "https://github.com/Alessandro-Salerno/Hackasm/issues"
