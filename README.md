@@ -44,7 +44,7 @@ Following these rules and examples may help you write standard-fitting code:
 - Create a `_main` label in the `text` section (this will become the program's entry point)
 
 **Keep in mind that:**
-- All original VM-O-MATIC use the format `opcode <operand>`
+- All original VM-O-MATIC instructions use the format `opcode <operand>`
 - All Hackasm macros start with a `.` and use the format `.macro <operands>`
 - The Hackasm Linker Directive Language uses the `+` symbol to offset values and addresses as in `stry _swap+1` (Store Y at _swap address + 1) or `ldx 200+1` (Store 201 in X)
 - The Hackasm Linker Directive Language uses the `|` symbol to access the higher and lower bytes of a 16 bit value as in `ldx 500|0` (Stores the higher byte) or `ldx 500|1` (Stores the lower byte)
