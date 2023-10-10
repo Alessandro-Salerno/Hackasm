@@ -119,6 +119,16 @@ class Compiler(AsmComponent):
         self.byte_offset = 0
         self.section = None
         super().__init__("COMPILER", code)
+        self.setup()
+
+    def setup(self):
+        cld = VmInstructionNode(VM_INSTRUCTIONS["CMPX"], "0", self.byte_offset, 0)
+        self.result.append(cld)
+        self.byte_offset += 2
+        inst = VmInstructionNode(VM_INSTRUCTIONS["JE"], "_main", self.byte_offset, 0)
+        self.result.append(inst)
+        self.byte_offset += inst.instruction.argsize + 1
+
 
     def add_symbol(self, key: str, value: str):
         self.symbols.__setitem__(key, value)
@@ -198,16 +208,9 @@ class Compiler(AsmComponent):
                 match (segments[0].upper()):
                     case 'DATA':
                         self.section = "DATA"
-                        if self.code_written:
+                        if self.section == "TEXT":
                             self.result.append(VmInstructionNode(VM_INSTRUCTIONS["RET"], "", self.byte_offset, index))
                             self.byte_offset += 1
-                        else:
-                            cld = VmInstructionNode(VM_INSTRUCTIONS["CMPX"], "0", self.byte_offset, index)
-                            self.result.append(cld)
-                            self.byte_offset += 2
-                            inst = VmInstructionNode(VM_INSTRUCTIONS["JE"], "_main", self.byte_offset, index)
-                            self.result.append(inst)
-                            self.byte_offset += inst.instruction.argsize + 1
 
                     case 'TEXT':
                         self.section = "TEXT"
