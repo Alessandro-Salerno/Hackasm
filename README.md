@@ -15,7 +15,7 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 ![](https://tokei.rs/b1/github/Alessandro-Salerno/Hackasm)
-![shield](https://img.shields.io/static/v1?label=version&message=DEV&color=blue) 
+![shield](https://img.shields.io/static/v1?label=version&message=0.1.1&color=blue) 
 
 
 # Hackasm
@@ -32,9 +32,8 @@ pip3 install git+https://github.com/Alessandro-Salerno/Hackasm
 ```
 
 ## Usage
-```
-<your python> -m hackasm <input file>
-```
+- Windows: `py hackasm.py <input file>`
+- Linux/macOS: `python3 hackasm.py <input file>`
 
 ## Writing Hackasm Assembly
 Hackasm Assembly is quite straight-forward and fairly intuitive, but it sports a cuple of quarks which may set you off at first.
@@ -106,10 +105,6 @@ Hackasm includes several handy macros to help developers. Following is a list of
 | `.popregs` | `.popregs` | Pops X and Y from the stack (in this order) | `.popregs` |
 | `.rmregs` | `.rmregs` | Removes top 16 bits from the stack without altering X and Y | `.rmregs` |
 | `.fetchregs` | `.fetchregs` | Reads X and Y from the stack (in this order) without popping | `.fetchregs` |
-
-## Usage
-- Windows: `py hackasm.py <input file>`
-- Linux/macOS: `python3 hackasm.py <input file>`
 
 ## License
 Hackasm is licensed under the GPL v3 license. See [LICENSE](LICENSE) for details
