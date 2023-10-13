@@ -48,8 +48,8 @@ VM_INSTRUCTIONS = {
     "JRLE": VmInstructionInfo(opcode="77", hasarg=True, argsize=2, maxarg=4096),
     "JG": VmInstructionInfo(opcode="78", hasarg=True, argsize=2, maxarg=4096),
     "JRG": VmInstructionInfo(opcode="79", hasarg=True, argsize=2, maxarg=4096),
-    "JGE": VmInstructionInfo(opcode="80", hasarg=True, argsize=2, maxarg=4096),
-    "JRGE": VmInstructionInfo(opcode="81", hasarg=True, argsize=2, maxarg=4096),
+    "JGE": VmInstructionInfo(opcode="7A", hasarg=True, argsize=2, maxarg=4096),
+    "JRGE": VmInstructionInfo(opcode="7B", hasarg=True, argsize=2, maxarg=4096),
     "ADDX": VmInstructionInfo(opcode="A0", hasarg=True, argsize=1),
     "ADDXY": VmInstructionInfo(opcode="A1", hasarg=False, argsize=0),
     "DECX": VmInstructionInfo(opcode="A2", hasarg=True, argsize=1),
@@ -117,18 +117,15 @@ class Compiler(AsmComponent):
         self.result = []
         self.code_written = False
         self.byte_offset = 0
+        self.padding_offset = 0
+        self.concrete_offset = 0
+        self.override_offset = 0
         self.section = None
         super().__init__("COMPILER", code)
-        self.setup()
 
-    def setup(self):
-        cld = VmInstructionNode(VM_INSTRUCTIONS["CMPX"], "0", self.byte_offset, 0)
-        self.result.append(cld)
-        self.byte_offset += 2
-        inst = VmInstructionNode(VM_INSTRUCTIONS["JE"], "_main", self.byte_offset, 0)
+        inst = VmInstructionNode(VM_INSTRUCTIONS["JE"], "_main", self.byte_offset, -1)
         self.result.append(inst)
         self.byte_offset += inst.instruction.argsize + 1
-
 
     def add_symbol(self, key: str, value: str):
         self.symbols.__setitem__(key, value)
@@ -174,6 +171,9 @@ class Compiler(AsmComponent):
                 if segments[0] in self.symbols or segments[0] in self.labels:
                     self.throw_error(index, 1, "Symbol already exists")
                 self.add_label(segments[0], self.byte_offset)
+                if segments[0] == "_main" and len(self.result) == 1:
+                    self.result = []
+                    self.byte_offset = 0
 
             case 'ASCII':
                 if self.section != "DATA":
@@ -204,16 +204,30 @@ class Compiler(AsmComponent):
             case 'SECTION':
                 if len(segments) != 1:
                     self.throw_error(index, None, "Expected section")
+
+                if self.section == 'OVERRIDE':
+                    self.override_offset = self.byte_offset
+                    self.byte_offset = self.concrete_offset
                 
                 match (segments[0].upper()):
                     case 'DATA':
-                        self.section = "DATA"
                         if self.section == "TEXT":
                             self.result.append(VmInstructionNode(VM_INSTRUCTIONS["RET"], "", self.byte_offset, index))
                             self.byte_offset += 1
+                        self.section = "DATA"
 
                     case 'TEXT':
                         self.section = "TEXT"
+
+                    case 'OVERRIDE':
+                        self.section = 'OVERRIDE'
+                        self.concrete_offset = self.byte_offset
+                        self.byte_offset = self.override_offset
+
+                    case 'META':
+                        if self.section != None:
+                            self.throw_error(index, None, "META section expected to be the first in source file")
+                        self.section = "META"
 
                     case _:
                         self.throw_error(index, 1, "Unknown section")
@@ -231,6 +245,29 @@ class Compiler(AsmComponent):
                 val = VmValueInfo("00" * segments[0])
                 self.result.append(VmInstructionNode(val, val.value, self.byte_offset, index))
                 self.byte_offset += segments[0]
+
+            case 'PAD':
+                if len(segments) != 1:
+                    self.throw_error(index, None, "Expected pad size")
+                if segments[0] in self.symbols:
+                    segments[0] = self.get_symbol(segments[0])
+                try:
+                    segments[0] = int(segments[0])
+                except:
+                    self.throw_error(index, 1, "Expected buffer size or macro symbol")
+                self.byte_offset += segments[0]
+                if self.section != "OVERRIDE":
+                    self.padding_offset += segments[0]
+
+            case 'WORD':
+                if self.section != "DATA":
+                    self.throw_error(index, None, "Unexpected byte allocation outside of DATA section")
+                val = VmValueInfo(segments[0])
+                val.hasarg = True
+                val.maxarg = math.pow(2, 64)
+                val.argsize = 0
+                self.result.append(VmInstructionNode(val, val.value, self.byte_offset, index))
+                self.byte_offset += 1
 
             case 'PUSHSTR':
                 if len(segments) != 1:
@@ -300,36 +337,28 @@ class Compiler(AsmComponent):
             case 'ADD16':
                 if len(segments) != 1:
                     self.throw_error(index, None, "Expected operand")
-                self.process_macro(index, "STRREGS", ["_swap"])
-                # self.process_instruction(index, "LDX", ["0"])
-                # self.process_instruction(index, "LDY", ["0"])
                 self.process_instruction(index, "POPX", [])
-                self.process_instruction(index, "CMPX", ["0"])
                 self.process_instruction(index, "ADDX", [segments[0]])
-                self.process_instruction(index, "JRE", ["29"])
                 self.process_instruction(index, "CMPX", [segments[0]])
-                self.process_instruction(index, "JRLE", ["6"])
                 # skip first overflow step if not necessary
-                self.process_instruction(index, "JRG", ["21"])
+                self.process_instruction(index, "JRGE", ["18"])
                 # first overflow step
                 self.process_instruction(index, "POPY", []) # get Y
                 self.process_instruction(index, "PUSHX", []) # save X
-                self.process_instruction(index, "LDX", ["0"]) # reset X
-                self.process_instruction(index, "ADDXY", []) # mov Y to X
+                self.process_instruction(index, "PUSHY", []) # swap registers
+                self.process_instruction(index, "POPX", []) # continuation of swap registers
                 self.process_instruction(index, "ADDX", ["1"]) # add 1 to X
-                self.process_instruction(index, "CMPX", ["0"]) # check if x has overflowed
                 # set Y = X
                 self.process_instruction(index, "PUSHX", [])
                 self.process_instruction(index, "POPY", [])
                 self.process_instruction(index, "POPX", [])
                 # Skip overflow step if not necessary
-                self.process_instruction(index, "JRG", ["5"])
+                self.process_instruction(index, "JRL", ["5"])
                 # overflow step
                 self.process_instruction(index, "LDX", ["0"])
                 # restore registers
                 self.process_instruction(index, "PUSHY", [])
                 self.process_instruction(index, "PUSHX", [])
-                self.process_macro(index, "LDREGS", ["_swap"])
 
             case 'JUMP':
                 if len(segments) != 1:
@@ -363,6 +392,46 @@ class Compiler(AsmComponent):
                 self.process_macro(index, "POPREGS", [])
                 self.process_macro(index, "PUSHREGS", [])
 
+            case 'FASTJUMP':
+                if len(segments) != 1:
+                    self.throw_error(index, None, "Expected address or label")
+                self.process_instruction(index, "CMPX", ["0"])
+                self.process_instruction(index, "JGE", [segments[0]])
+
+            case 'PUSH16':
+                if len(segments) != 1:
+                    self.throw_error(index, None, "Expected a 16-bit value")
+                self.process_instruction(index, "LDX", [f"{segments[0]}|0"])
+                self.process_instruction(index, "PUSHX", [])
+                self.process_instruction(index, "LDX", [f"{segments[0]}|1"])
+                self.process_instruction(index, "PUSHX", [])
+            
+            case 'STR16':
+                if len(segments) != 2:
+                    self.throw_error(index, None, "Expected value and destination")
+                self.process_instruction(index, "LDX", [f"{segments[0]}|1"])
+                self.process_instruction(index, "STRX", [segments[1]])
+                self.process_instruction(index, "LDX", [f"{segments[0]}|0"])
+                self.process_instruction(index, "STRX", [f"{segments[1]}+1"])
+
+            case 'INST':
+                if self.section != "META":
+                    self.throw_error(index, None, "Unexpected VM instruction declaration outside META section")
+                if len(segments) != 4:
+                    self.throw_error(index, None, "Expected mnemonic, opcode and number of arguments and max argument")
+                mnemonic = segments[0].upper()
+                opcode = segments[1].upper()
+                if not segments[2].isdecimal():
+                    self.throw_error(index, 2, "Expected decimal number")
+                argsize = int(segments[2])
+                maxarg = None
+                if segments[3] != "?":
+                    if not segments[3].isdecimal():
+                        self.throw_error(index, 3, "Invalid syntax")
+                    maxarg = int(segments[3])
+                info = VmInstructionInfo(opcode, argsize != 0, argsize, maxarg)
+                VM_INSTRUCTIONS.__setitem__(mnemonic, info)
+                    
             case _:
                 self.throw_error(index, None, f"Unknown macro '{macro}'")
 
@@ -401,6 +470,8 @@ def compile(code: str):
         if len(line_segments) == 0:
             continue  
         res.compile_line(index, line_segments)
+    if res.section == 'OVERRIDE':
+        res.byte_offset = res.concrete_offset
     return res
 
 
@@ -454,10 +525,12 @@ def link(compiler: Compiler):
         changed, int_val, str_val = to_linked_repr(final_int, True)
         while len(str_val) < 2 * inst_info.argsize:
             str_val = "0" + str_val
+        while len(str_val) % 2 != 0:
+            str_val = "0" + str_val
         linked_node = VmInstructionNode(node.instruction, str_val, node.offset, node.lineno)
         res.append(linked_node)
     
-    print(f'Linked bytecode size: {compiler.byte_offset} byte(s)')
+    print(f'Linked bytecode size: {compiler.byte_offset - compiler.padding_offset} byte(s)')
     print("Linked labels:")
     for label, address in compiler.labels.items():
         print(f"  - {label}: {hex(address)}")

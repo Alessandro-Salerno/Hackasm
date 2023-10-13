@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hackasm"
-version = "0.1.1"
+version = "0.2.0"
 authors = [
   { name="Alessandro Salerno" },
 ]
-description = " A work-in-progress small and simple build system meant for smaller C Projects."
+description = "Assembler for VM-O-MATIC"
 license = { file="LICENSE" }
 readme = "README.md"
 requires-python = ">=3.10"
