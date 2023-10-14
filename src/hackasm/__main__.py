@@ -123,7 +123,10 @@ class Compiler(AsmComponent):
         self.section = None
         super().__init__("COMPILER", code)
 
-        inst = VmInstructionNode(VM_INSTRUCTIONS["JE"], "_main", self.byte_offset, -1)
+        cld = VmInstructionNode(VM_INSTRUCTIONS["CMPX"], "0", self.byte_offset, 0)
+        self.result.append(cld)
+        self.byte_offset += 2
+        inst = VmInstructionNode(VM_INSTRUCTIONS["JE"], "_main", self.byte_offset, 0)
         self.result.append(inst)
         self.byte_offset += inst.instruction.argsize + 1
 
