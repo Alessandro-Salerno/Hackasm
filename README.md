@@ -32,8 +32,8 @@ pip3 install git+https://github.com/Alessandro-Salerno/Hackasm
 ```
 
 ## Usage
-- Windows: `py hackasm.py <input file>`
-- Linux/macOS: `python3 hackasm.py <input file>`
+- Windows: `py -m hackasm <input file>`
+- Linux/macOS: `python3 -m hackasm <input file>`
 
 ## Writing Hackasm Assembly
 Hackasm Assembly is quite straight-forward and fairly intuitive, but it sports a cuple of quarks which may set you off at first.
@@ -43,8 +43,8 @@ Following these rules and examples may help you write standard-fitting code:
 - Create a `_main` label in the `text` section (this will become the program's entry point)
 
 **Keep in mind that:**
-- All original VM-O-MATIC instructions use the format `opcode <operand>`
-- All Hackasm macros start with a `.` and use the format `.macro <operands>`
+- All original VM-O-MATIC instructions use the format `<opcode> <operand>`
+- All Hackasm macros start with a `.` and use the format `.<macro> <operands>`
 - The Hackasm Linker Directive Language uses the `+` symbol to offset values and addresses as in `stry _swap+1` (Store Y at _swap address + 1) or `ldx 200+1` (Store 201 in X)
 - The Hackasm Linker Directive Language uses the `|` symbol to access the higher and lower bytes of a 16 bit value as in `ldx 500|0` (Stores the higher byte) or `ldx 500|1` (Stores the lower byte)
 
@@ -95,7 +95,7 @@ Hackasm includes several handy macros to help developers. Following is a list of
 | `.ascii` | `.ascii "<string>"` | Stores an ASCII string in a continuous region of memory starting at the current byte offset | `.ascii "Hello, world!"` |
 | `.section` | `.section <section>` | Starts a new secion | `.section text ` |
 | `.alloc` | `.alloc <num bytes>` | Allocates a continuous buffer starting at the current byte offset. The assembler runs no checks on the size! Make sure it fits | `.alloc 16` |
-| `.strregs` | `.strregs <pointer>` | Stores X at `pointer` and Y at `pointer+1` | `strregs _swap` |
+| `.strregs` | `.strregs <pointer>` | Stores X at `pointer` and Y at `pointer+1` | `.strregs _swap` |
 | `.ldregs` | `.ldregs <pointer>` | Loads X from `pointer ` and  Y from `pointer+1` | `.ldregs _swap` |
 | `.ld16` | `.ld16 <value or pointer>` | Loads a 16 bit value or pointer into X and Y. Higher bytes goes into Y and lower byte goes into X | `.ld16 2048` |
 | `.pushregs` | `.pushregs` | Pushes Y and X on the stack (in this order) | `.pushregs` |
